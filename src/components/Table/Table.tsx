@@ -1,16 +1,26 @@
-import { ColumnDef, getCoreRowModel, useReactTable, flexRender } from '@tanstack/react-table'
+import { ColumnDef, getCoreRowModel, useReactTable, flexRender, SortingState, getSortedRowModel, Cell } from '@tanstack/react-table'
+import { CSSProperties, useState } from 'react'
+import "../../styles/Table.css"
 
 type TableProps<T> = {
     data: T[]
     columns: ColumnDef<T, any>[]
+    cellStyle: Function
 }
 
-function Table<E>({ data, columns }: TableProps<E> ) {
+function Table<E>({ data, columns, cellStyle }: TableProps<E> ) {
+    const [sorting, setSorting] = useState<SortingState>([])
+
     const table = useReactTable({
         data,
         columns,
-        getCoreRowModel: getCoreRowModel(),
         enableColumnResizing: true,
+        state: {
+            sorting
+        },
+        onSortingChange: setSorting,
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
     })
 
     return (
@@ -18,29 +28,37 @@ function Table<E>({ data, columns }: TableProps<E> ) {
             <table>
                 <thead>
                     {table.getHeaderGroups().map(headerGroup => (
-                    <tr key={headerGroup.id}>
-                        {headerGroup.headers.map(header => (
-                        <th key={header.id} colSpan={header.colSpan}>
-                            {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                                )}
-                        </th>
-                        ))}
-                    </tr>
+                        <tr key={headerGroup.id}>
+                            {headerGroup.headers.map(header => (
+                                <th key={header.id} colSpan={header.colSpan}>
+                                    {header.isPlaceholder ? null : 
+                                       <div style={{ cursor: "pointer" }}
+                                         onClick={header.column.getToggleSortingHandler()}
+                                     >
+                                       {flexRender(
+                                         header.column.columnDef.header,
+                                         header.getContext()
+                                       )}
+                                       {{
+                                         asc: ' ^',
+                                         desc: ' v',
+                                       }[header.column.getIsSorted() as string] ?? null}
+                                     </div>
+                                    }
+                                </th>
+                            ))}
+                        </tr>
                     ))}
                 </thead>
                 <tbody>
                     {table.getRowModel().rows.map(row => (
-                    <tr key={row.id}>
-                        {row.getVisibleCells().map(cell => (
-                        <td key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                        ))}
-                    </tr>
+                        <tr key={row.id}>
+                            {row.getVisibleCells().map(cell => (
+                                <td style={cellStyle(cell)} key={cell.id}>
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </td>
+                            ))}
+                        </tr>
                     ))}
                 </tbody>
             </table>

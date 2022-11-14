@@ -1,10 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
-import { createColumnHelper } from "@tanstack/react-table"
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { Cell, createColumnHelper } from "@tanstack/react-table"
 import { parse, ParseResult } from 'papaparse'
 import Table from './Table'
 
-async function fetchData() {
-    const response = await fetch("dataset.csv")
+/**
+ * Retrieves the specified dataset and decodes it.
+ * 
+ * @param url - The location of the dataset to be fetched.
+ * @returns The csv as a string
+ */
+async function fetchData(url: string) {
+    const response = await fetch(url)
     const reader = response.body!.getReader()
     const result = await reader.read()
     const decoder = new TextDecoder('utf-8')
@@ -16,7 +22,7 @@ function PersonTable() {
     const [data, setData] = useState<Person[]>([])
 
     const getData = useCallback(async () => {
-        parse(await fetchData(), {
+        parse(await fetchData("dataset.csv"), {
             worker: true,
             header: true,
             skipEmptyLines: true,
@@ -32,8 +38,7 @@ function PersonTable() {
     }, [])
 
     const columnHelper = createColumnHelper<Person>()
-
-    const columns = [
+    const columns = useMemo(() => [
         columnHelper.accessor('rank', {
             cell: info => info.getValue(),
             header: () => <span>Rank</span>
@@ -47,12 +52,14 @@ function PersonTable() {
             header: () => <span>Net Worth</span>
         }),
         columnHelper.accessor('lastchange', {
+            id: 'lastchange',
             cell: info => info.getValue(),
-            header: () => <span>Last Change</span>
+            header: () => <span>Last Change ($)</span>
         }),
         columnHelper.accessor('ytdchange', {
+            id: 'ytdchange',
             cell: info => info.getValue(),
-            header: () => <span>YTD Change</span>
+            header: () => <span>YTD Change ($)</span>
         }),
         columnHelper.accessor('country', {
             cell: info => info.getValue(),
@@ -62,10 +69,21 @@ function PersonTable() {
             cell: info => info.getValue(),
             header: () => <span>Industry</span>
         }),
-    ]
+    ], [])
+
+    const cellStyle = (cell: Cell<Person, any>) => {
+        if (cell.column.id === 'ytdchange' || cell.column.id === 'lastchange') {
+            return {
+                backgroundColor:  ((cell.getValue() as string).startsWith("-") ? "#DF896F" : "#BEDD98"),
+                color: "black"
+            }
+        }
+
+        return {}
+    }
 
     return (
-        <Table<Person> data={data} columns={columns}/>
+        <Table<Person> data={data} columns={columns} cellStyle={cellStyle}/>
     )
 }
 
