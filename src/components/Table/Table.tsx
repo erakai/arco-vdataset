@@ -1,5 +1,5 @@
-import { ColumnDef, getCoreRowModel, useReactTable, flexRender, SortingState, getSortedRowModel, Cell } from '@tanstack/react-table'
-import { CSSProperties, useState } from 'react'
+import { ColumnDef, getCoreRowModel, useReactTable, flexRender, SortingState, getSortedRowModel } from '@tanstack/react-table'
+import { useState } from 'react'
 import "../../styles/Table.css"
 
 type TableProps<T> = {
@@ -8,6 +8,10 @@ type TableProps<T> = {
     cellStyle: Function
 }
 
+// The generic table class used to display some dataset. I made the decision
+// to abstract that functionality as in a real usecase more than a single csv
+// would likely be displayed. Here data represents the rows, columns the
+// columns, and cellStyle any desired conditional formatting.
 function Table<E>({ data, columns, cellStyle }: TableProps<E> ) {
     const [sorting, setSorting] = useState<SortingState>([])
 
@@ -32,9 +36,10 @@ function Table<E>({ data, columns, cellStyle }: TableProps<E> ) {
                             {headerGroup.headers.map(header => (
                                 <th key={header.id} colSpan={header.colSpan}>
                                     {header.isPlaceholder ? null : 
-                                       <div style={{ cursor: "pointer" }}
-                                         onClick={header.column.getToggleSortingHandler()}
-                                     >
+                                       <div style={(header.column.getCanSort() ? { cursor: "pointer" }: {})}
+                                         onClick={header
+                                                    .column
+                                                    .getToggleSortingHandler()} >
                                        {flexRender(
                                          header.column.columnDef.header,
                                          header.getContext()
@@ -42,7 +47,8 @@ function Table<E>({ data, columns, cellStyle }: TableProps<E> ) {
                                        {{
                                          asc: ' ^',
                                          desc: ' v',
-                                       }[header.column.getIsSorted() as string] ?? null}
+                                       }[header.column.getIsSorted() as string] 
+                                            ?? null}
                                      </div>
                                     }
                                 </th>
@@ -55,7 +61,8 @@ function Table<E>({ data, columns, cellStyle }: TableProps<E> ) {
                         <tr key={row.id}>
                             {row.getVisibleCells().map(cell => (
                                 <td style={cellStyle(cell)} key={cell.id}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    {flexRender(cell.column.columnDef.cell, 
+                                        cell.getContext())}
                                 </td>
                             ))}
                         </tr>

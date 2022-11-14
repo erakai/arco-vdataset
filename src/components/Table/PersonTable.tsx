@@ -21,6 +21,7 @@ async function fetchData(url: string) {
 function PersonTable() {
     const [data, setData] = useState<Person[]>([])
 
+    // Initially loads and configures the csv into the component's state.
     const getData = useCallback(async () => {
         parse(await fetchData("dataset.csv"), {
             worker: true,
@@ -37,11 +38,12 @@ function PersonTable() {
         getData()
     }, [])
 
+    // Creates the (memoized) column defs required by react-table 
     const columnHelper = createColumnHelper<Person>()
     const columns = useMemo(() => [
         columnHelper.accessor('rank', {
             cell: info => info.getValue(),
-            header: () => <span>Rank</span>
+            header: () => <span>Rank</span>,
         }),
         columnHelper.accessor('name', {
             cell: info => info.getValue(),
@@ -54,12 +56,14 @@ function PersonTable() {
         columnHelper.accessor('lastchange', {
             id: 'lastchange',
             cell: info => info.getValue(),
-            header: () => <span>Last Change ($)</span>
+            header: () => <span>Last Change ($)</span>,
+            enableSorting: false
         }),
         columnHelper.accessor('ytdchange', {
             id: 'ytdchange',
             cell: info => info.getValue(),
-            header: () => <span>YTD Change ($)</span>
+            header: () => <span>YTD Change ($)</span>,
+            enableSorting: false
         }),
         columnHelper.accessor('country', {
             cell: info => info.getValue(),
@@ -71,10 +75,13 @@ function PersonTable() {
         }),
     ], [])
 
+    // Conditional formatting to fill the specific columns based on positive
+    // or negative values.
     const cellStyle = (cell: Cell<Person, any>) => {
         if (cell.column.id === 'ytdchange' || cell.column.id === 'lastchange') {
             return {
-                backgroundColor:  ((cell.getValue() as string).startsWith("-") ? "#DF896F" : "#BEDD98"),
+                backgroundColor:  ((cell.getValue() as string).startsWith("-") 
+                    ? "#DF896F" : "#BEDD98"),
                 color: "black"
             }
         }
